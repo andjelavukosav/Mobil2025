@@ -43,4 +43,10 @@ public class FirebaseAuthManager {
     public FirebaseUser currentUser() {
         return auth.getCurrentUser();
     }
+
+    public void signIn(String email, String password, OnSuccessListener<AuthResult> ok, OnFailureListener err) {
+        auth.signInWithEmailAndPassword(email, password) // Firebase SDK kreira autentifikacioni token i cuva ga lokalno unutar apl
+                .addOnSuccessListener(ok)
+                .addOnFailureListener(err);
+    }
 }
