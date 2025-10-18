@@ -22,4 +22,9 @@ public final class Validators {
     public static String normalizeUsernameKey(String username) {
         return username.toLowerCase(java.util.Locale.ROOT);
     }
+
+    public static boolean isLoginInputValid(String email, String pass) {
+        return isEmailValid(email) && isPasswordValid(pass);
+    }
+
 }
