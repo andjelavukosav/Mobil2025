@@ -7,16 +7,13 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.Transaction;
 
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * Repozitorijum koji upravlja korisnicima u Firestore bazi.
- * Obezbeđuje da je korisničko ime jedinstveno (transakcija).
- */
 public class UserRepository {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -29,38 +26,35 @@ public class UserRepository {
             OnSuccessListener<Void> ok,
             OnFailureListener err
     ) {
-        // kljuc za username, sve mala slova
         String unameKey = username.toLowerCase(Locale.ROOT);
-
         DocumentReference unameRef = db.collection("usernames").document(unameKey);
         DocumentReference userRef = db.collection("users").document(uid);
 
         db.runTransaction((Transaction.Function<Void>) transaction -> {
-                    DocumentSnapshot unameSnap = transaction.get(unameRef);
-                    if (unameSnap.exists()) {
-                        throw new FirebaseFirestoreException(
-                                "Korisničko ime je zauzeto",
-                                FirebaseFirestoreException.Code.ALREADY_EXISTS
-                        );
-                    }
+            DocumentSnapshot unameSnap = transaction.get(unameRef);
+            if (unameSnap.exists()) {
+                throw new FirebaseFirestoreException(
+                        "Korisničko ime je zauzeto",
+                        FirebaseFirestoreException.Code.ALREADY_EXISTS
+                );
+            }
 
-                    // rezerviši username
-                    Map<String, Object> unameDoc = new HashMap<>();
-                    unameDoc.put("uid", uid);
-                    transaction.set(unameRef, unameDoc);
+            long now = System.currentTimeMillis();
+            long activationDeadline = now + 2L * 60L * 1000L; // ✅ 2 minuta
 
-                    // kreiraj profil
-                    UserProfile profile = new UserProfile(
-                            uid,
-                            email,
-                            username,
-                            avatarKey,
-                            System.currentTimeMillis()
-                    );
-                    transaction.set(userRef, profile);
+            Map<String, Object> unameDoc = new HashMap<>();
+            unameDoc.put("uid", uid);
+            transaction.set(unameRef, unameDoc);
 
-                    return null;
-                }).addOnSuccessListener(ok)
-                .addOnFailureListener(err);
+            UserProfile profile = new UserProfile(uid, email, username, avatarKey, now);
+            profile.enabled = false;
+            transaction.set(userRef, profile);
+
+            Map<String, Object> extra = new HashMap<>();
+            extra.put("activationDeadline", activationDeadline);
+            transaction.set(userRef, extra, SetOptions.merge());
+
+            return null;
+        }).addOnSuccessListener(ok).addOnFailureListener(err);
     }
 }

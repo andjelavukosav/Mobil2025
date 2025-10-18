@@ -16,19 +16,14 @@ import com.example.mobil2025.data.repo.UserRepository;
 import com.example.mobil2025.util.Validators;
 import com.google.firebase.auth.FirebaseUser;
 
-/**
- * Aktivnost za registraciju korisnika.
- * Koristi Firebase Authentication i Firestore preko repozitorijuma.
- */
 public class RegisterActivity extends AppCompatActivity {
 
     private EditText etEmail, etPassword, etPasswordConfirm, etUsername;
     private Button btnRegister;
     private ProgressBar progress;
 
-    // Novi avatari
     private ImageView ivFox, ivTurtle, ivLion, ivCat, ivPanda;
-    private String selectedAvatarKey = "avatar_fox"; // default
+    private String selectedAvatarKey = "avatar_fox";
 
     private FirebaseAuthManager authManager;
     private UserRepository userRepo;
@@ -41,7 +36,6 @@ public class RegisterActivity extends AppCompatActivity {
         authManager = new FirebaseAuthManager();
         userRepo = new UserRepository();
 
-        // Inicijalizacija input polja
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         etPasswordConfirm = findViewById(R.id.etPasswordConfirm);
@@ -49,14 +43,12 @@ public class RegisterActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         progress = findViewById(R.id.progress);
 
-        // Inicijalizacija avatara
         ivFox = findViewById(R.id.avatar_fox);
         ivTurtle = findViewById(R.id.avatar_turtle);
         ivLion = findViewById(R.id.avatar_lion);
         ivCat = findViewById(R.id.avatar_cat);
         ivPanda = findViewById(R.id.avatar_panda);
 
-        // Klikovi za izbor avatara
         View.OnClickListener avatarClick = v -> {
             clearSelections();
             v.setSelected(true);
@@ -73,8 +65,6 @@ public class RegisterActivity extends AppCompatActivity {
         ivLion.setOnClickListener(avatarClick);
         ivCat.setOnClickListener(avatarClick);
         ivPanda.setOnClickListener(avatarClick);
-
-        // Fox je podrazumevano selektovan
         ivFox.setSelected(true);
 
         btnRegister.setOnClickListener(v -> onRegister());
@@ -94,28 +84,26 @@ public class RegisterActivity extends AppCompatActivity {
         String pass2 = etPasswordConfirm.getText().toString();
         String username = etUsername.getText().toString().trim();
 
-        // Validacija
         if (!Validators.isEmailValid(email)) { etEmail.setError("Neispravan email"); return; }
         if (!Validators.isPasswordValid(pass)) { etPassword.setError("Min 6 karaktera"); return; }
         if (!Validators.doPasswordsMatch(pass, pass2)) { etPasswordConfirm.setError("Lozinke se ne poklapaju"); return; }
         if (!Validators.isUsernameValid(username)) { etUsername.setError("3-20, slova/brojevi ._-"); return; }
-        if (selectedAvatarKey == null) { toast("Izaberi avatar"); return; }
 
         setLoading(true);
 
         authManager.createUser(email, pass, result -> {
             FirebaseUser fu = result.getUser();
-            if (fu == null) {
-                setLoading(false);
-                toast("Neočekovana greška");
-                return;
-            }
+            if (fu == null) { setLoading(false); toast("Neočekovana greška"); return; }
+
+            fu.sendEmailVerification()
+                    .addOnSuccessListener(a -> toast("Proveri email — link važi 2 minuta."))
+                    .addOnFailureListener(e -> toast("Nije poslata verifikacija: " + e.getMessage()));
 
             userRepo.createUserProfileWithUniqueUsername(
                     fu.getUid(), email, username, selectedAvatarKey,
                     aVoid -> {
                         setLoading(false);
-                        toast("Uspešna registracija!");
+                        toast("Registracija uspešna! Proveri email i aktiviraj nalog.");
                         finish();
                     },
                     e -> {
