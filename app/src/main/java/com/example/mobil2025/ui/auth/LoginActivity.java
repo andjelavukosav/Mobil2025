@@ -12,6 +12,7 @@ import android.widget.Toast;
 import com.example.mobil2025.MainActivity;
 import com.example.mobil2025.R;
 import com.example.mobil2025.data.auth.FirebaseAuthManager;
+import com.example.mobil2025.ui.profile.ProfileActivity;
 import com.example.mobil2025.util.AuthErrorUtils;
 import com.example.mobil2025.util.Validators;
 import com.google.firebase.auth.FirebaseAuth;
@@ -72,7 +73,7 @@ public class LoginActivity extends AppCompatActivity {
             setLoading(false);
             Toast.makeText(this, "Prijava uspešna", Toast.LENGTH_SHORT).show();
             // Prelazak na glavni ekran
-            startActivity(new Intent(this, MainActivity.class));
+            startActivity(new Intent(this, ProfileActivity.class));
             finish();
         }, e -> {
             setLoading(false);
@@ -101,7 +102,7 @@ public class LoginActivity extends AppCompatActivity {
         FirebaseAuth auth = FirebaseAuth.getInstance();
         if(auth.getCurrentUser() != null) {
             // Vec ulogovan - preskoci login
-            Intent intent = new Intent(this, MainActivity.class);
+            Intent intent = new Intent(this, ProfileActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent); // pokreni MainActivity iz ove LoginActivity
         }
